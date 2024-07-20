@@ -304,27 +304,3 @@ class EfficientNetFactory:
             'b4': 380, 'b5': 456, 'b6': 528, 'b7': 600
         }
         return configs.get(variant, 224)  # Default to 224 if variant not found
-
-
-if __name__ == "__main__":
-    import torch
-    from torchviz import make_dot
-
-
-    # Get the appropriate input size for the chosen variant
-    resolution = EfficientNetFactory.get_input_size(variant)
-
-    # Create a dummy input tensor
-    dummy_input = torch.randn(1, 3, resolution, resolution)
-
-    # Generate the dot graph
-    dot = make_dot(model(dummy_input), params=dict(model.named_parameters()))
-
-    # Render and save the graph
-    dot.render(f'EfficientNet', format='png', cleanup=True)
-    print(f"Model visualization has been saved as 'EfficientNet.png'")
-
-    # Print model summary and total parameters
-    print(model)
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters: {total_params}")
