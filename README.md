@@ -73,6 +73,64 @@ For a detailed view of the EfficientNet architecture, refer to our EfficientNet 
 
 ![EfficientNet.png](docs/EfficientNet.png)
 
+## Data Preparation and Augmentation
+
+This project uses a combination of Kuzushiji-Kanji and Kuzushiji-49 datasets, which are then balanced and augmented. Follow these steps to prepare your data:
+
+### 1. Download and Extract Datasets
+
+Download the Kuzushiji-49 and Kuzushiji-Kanji datasets from the [ROIS-CODH/kmnist GitHub repository](https://github.com/rois-codh/kmnist). Extract the files into the `EfficientNet-KuzushijiKanji/data` directory. After extraction, your data directory should contain the following files:
+
+```text
+data/
+├── k49-test-imgs.npz
+├── k49-test-labels.npz
+├── k49-train-imgs.npz
+├── k49-train-labels.npz
+├── k49_classmap.csv
+├── kkanji.tar
+└── kkanji2/
+```
+### 2. Combine Datasets
+
+Run the script to combine Kuzushiji-Kanji and Kuzushiji-49 datasets:
+
+```bash
+python src/01_combine_k49_and_kkanji2_datasets.py
+```
+
+This script merges:
+- Kuzushiji-Kanji: A large, imbalanced 64x64 dataset of 3,832 Kanji characters (140,424 images)
+- Kuzushiji-49: 270,912 images spanning 49 classes (extension of Kuzushiji-MNIST)
+- Kuzushiji-MNIST: 70,000 28x28 grayscale images across 10 classes (balanced dataset)
+
+### 3. Balance and Augment Dataset
+
+Next, run the script to balance the combined dataset:
+
+```bash
+python src/02_balance_kuzushiji_dataset.py
+```
+
+This script applies various augmentation techniques to create a balanced dataset:
+- Elastic transforms
+- Affine transforms
+- Noise addition
+
+The script generates 10,000 images per Kanji character. For characters with more than 7,000 original samples, it randomly subsamples to maintain diversity.
+
+### Alternative: Download Pre-balanced Dataset
+
+If you prefer to skip the data preparation steps, you can download our pre-balanced dataset from [this Google Drive link](#).
+
+### Note on Script Execution
+
+The scripts in the `src` directory are numbered (e.g., `01_`, `02_`) to indicate the order in which they should be run. Always execute them in ascending numerical order to ensure proper data processing.
+
+## Next Steps
+
+After preparing your data, you can proceed to train the EfficientNet model on the balanced Kuzushiji dataset. Refer to the subsequent sections of this README for instructions on model training and evaluation.
+
 ## Contributing
 
 We welcome contributions to improve EfficientNet-KuzushijiKanji! If you'd like to contribute, please follow these steps:
