@@ -9,7 +9,6 @@ PyTorch implementation of EfficientNet optimized for Kuzushiji-Kanji character r
 - [EfficientNet](#EfficientNet)
 - [Getting Started](#getting-started)
 - [Usage](#usage)
-- [EfficientNet Architecture](#efficientnet-architecture)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -121,7 +120,7 @@ input_data = torch.randn(1, 3, input_size, input_size)
 
 # Use the model for inference
 with torch.no_grad():
- output = model(input_data)
+    output = model(input_data)
 
 # Process the output as needed
 predicted_class = torch.argmax(output, dim=1)
@@ -151,7 +150,7 @@ data/
 Run the script to combine Kuzushiji-Kanji and Kuzushiji-49 datasets:
 
 ```bash
-python src/01_combine_k49_and_kkanji2_datasets.py
+python 01_combine_k49_and_kkanji2_datasets.py
 ```
 
 This script merges:
@@ -164,7 +163,7 @@ This script merges:
 Next, run the script to balance the combined dataset:
 
 ```bash
-python src/02_balance_kuzushiji_dataset.py
+python 02_balance_kuzushiji_dataset.py
 ```
 
 This script applies various augmentation techniques to create a balanced dataset:
@@ -174,13 +173,49 @@ This script applies various augmentation techniques to create a balanced dataset
 
 The script generates 10,000 images per Kanji character. For characters with more than 7,000 original samples, it randomly subsamples to maintain diversity.
 
-### Alternative: Download Pre-balanced Dataset
+#### Alternative: Download Pre-balanced Dataset
 
 If you prefer to skip the data preparation steps, you can download our pre-balanced dataset from [this Google Drive link](#).
 
+### 4. Prepare Kuzushiji Array Data
+
+After balancing the dataset, run the following script to prepare the data for model training:
+
+```bash
+python 03_prepare_kuzushiji_array_data.py
+```
+This script performs several crucial tasks:
+
+1. Create Index Mapping:
+
+   - Generates an index.json file in the ../data/kuzushiji-arrays directory.
+   - This JSON file contains a mapping between Kanji characters, their Unicode codepoints, and integer indices.
+   - The indices correspond to the output of the classification softmax layer, facilitating sparse categorical cross-entropy loss calculation during training.
+
+2. Generate Numpy Arrays:
+
+   - Creates two numpy arrays saved in the ../data/kuzushiji-arrays directory:
+        
+        - `images.npy`: Contains all images as uint8 arrays, one image per row.
+     
+        - `labels.npy`: Contains the corresponding integer labels as uint32 values, with rows matching the images.npy file.
+
+3. Data Organization:
+
+Reads all 10,000 images for each Kanji character from the balanced dataset.
+Ensures consistent ordering between images and their corresponding labels.
+
+This preprocessing step is crucial for efficient model training, as it:
+
+- Provides a standardized mapping between characters and their numeric representations.
+- Organizes the image data in a format that's ready for batch processing during training.
+- Allows for quick loading of the entire dataset into memory, potentially speeding up the training process.
+
+After running this script, you'll have a structured dataset ready for model input, with a clear mapping between the model's output indices and the corresponding Kanji characters and codepoints.
+
 ### Note on Script Execution
 
-The scripts in the `src` directory are numbered (e.g., `01_`, `02_`) to indicate the order in which they should be run. Always execute them in ascending numerical order to ensure proper data processing.
+The scripts in the `src` directory are numbered (e.g., `01_`, `02_`, ...) to indicate the order in which they should be run. Always execute them in ascending numerical order to ensure proper data processing.
 
 ## Next Steps
 
