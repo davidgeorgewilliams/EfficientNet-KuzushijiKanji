@@ -1,6 +1,122 @@
+import os
+import random
+import shutil
+
 import numpy as np
+from PIL import Image
 from scipy.ndimage import gaussian_filter, map_coordinates
 from skimage import transform
+from tqdm import tqdm
+
+
+def resize_and_save(img, save_path):
+    """
+    Resize an image to 64x64 pixels and save it to the specified path.
+
+    This function takes a numpy array representing an image, converts it to a PIL Image,
+    resizes it to 64x64 pixels using the Lanczos resampling filter, and then saves it
+    to the specified file path.
+
+    Args:
+        img (numpy.ndarray): A 2D or 3D numpy array representing a grayscale image.
+                             If 3D, the function will squeeze it to 2D.
+        save_path (str): The file path where the resized image should be saved.
+
+    Returns:
+        None
+
+    Notes:
+        - The input image is assumed to be grayscale.
+        - The function uses the Lanczos resampling filter, which generally provides
+          high-quality results for downscaling.
+        - The output image is always saved as a grayscale PNG file.
+
+    Raises:
+        ValueError: If the input is not a 2D or 3D numpy array.
+        IOError: If there's an issue saving the file to the specified path.
+
+    Example:
+        >>> import numpy as np
+        >>> img = np.random.rand(100, 100) * 255  # Create a random 100x100 grayscale image
+        >>> resize_and_save(img, 'resized_image.png')
+        This will create a 64x64 pixel grayscale PNG image named 'resized_image.png'.
+    """
+    img_pil = Image.fromarray(img.squeeze(), mode='L')
+    img_resized = img_pil.resize((64, 64), Image.LANCZOS)
+    img_resized.save(save_path)
+
+
+def balance_class(input_dir, output_dir, target_count=10000):
+    """
+    Balance a class of images to a target count through sampling or augmentation.
+
+    This function ensures that the output directory contains exactly `target_count` images
+    for a given class. If the input directory contains more images than the target count,
+    it randomly samples from the existing images. If it contains fewer, it copies all
+    existing images and then augments them to reach the target count.
+
+    Args:
+        input_dir (str): Path to the directory containing the original images for a single class.
+        output_dir (str): Path to the directory where balanced images will be saved.
+        target_count (int, optional): The desired number of images for the class. Defaults to 10000.
+
+    Returns:
+        None
+
+    Notes:
+        - Images in the input directory should be in PNG format.
+        - Output images are renamed numerically (e.g., '00000.png', '00001.png', etc.).
+        - If augmentation is needed, it uses the `augment_image` function (not shown here).
+        - Augmented images are converted to grayscale before processing.
+        - A progress bar (tqdm) is displayed during augmentation.
+
+    Behavior:
+        1. If input_dir has >= target_count images:
+           - Randomly sample target_count images and copy them to output_dir.
+        2. If input_dir has < target_count images:
+           - Copy all existing images to output_dir.
+           - Augment randomly chosen images until target_count is reached.
+
+    Example:
+        >>> balance_class('/path/to/original/あ', '/path/to/balanced/あ', target_count=10000)
+        This will ensure the '/path/to/balanced/あ' directory contains exactly 10000 images,
+        either by sampling or augmenting the images from '/path/to/original/あ'.
+
+    Warning:
+        This function will overwrite existing files in the output directory if they have
+        the same names as the generated files.
+    """
+    # List all images in the input directory
+    image_files = [f for f in os.listdir(input_dir) if f.endswith('.png')]
+
+    # If we have more than target_count images, randomly sample target_count
+    if len(image_files) >= target_count:
+        selected_files = random.sample(image_files, target_count)
+        for i, file in enumerate(selected_files):
+            shutil.copy(str(os.path.join(input_dir, file)), str(os.path.join(output_dir, f"{i:05d}.png")))
+    else:
+        # Copy all existing images
+        for i, file in enumerate(image_files):
+            shutil.copy(os.path.join(input_dir, file), os.path.join(output_dir, f"{i:05d}.png"))
+
+        # Augment images until we reach target_count
+        i = len(image_files)
+        pbar = tqdm(total=target_count - len(image_files), desc=f"Augmenting {input_dir}")
+        while i < target_count:
+            # Randomly select an image to augment
+            original_file = random.choice(image_files)
+            original_image = Image.open(os.path.join(input_dir, original_file)).convert('L')
+            original_array = np.array(original_image) / 255.0
+
+            # Augment the image
+            augmented_array = augment_image(original_array)
+            augmented_image = Image.fromarray((augmented_array * 255).astype(np.uint8))
+
+            # Save the augmented image
+            augmented_image.save(os.path.join(output_dir, f"{i:05d}.png"))
+            i += 1
+            pbar.update(1)
+        pbar.close()
 
 
 def elastic_transform(image, alpha=1000, sigma=30, random_state=None):
@@ -46,7 +162,7 @@ def elastic_transform(image, alpha=1000, sigma=30, random_state=None):
     dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
 
     x, y = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
-    indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx, (-1, 1))
+    indices = np.reshape(y + dy, (-1, 1)), np.reshape(x + dx, (-1, 1))
 
     return map_coordinates(image, indices, order=1, mode='reflect').reshape(shape)
 

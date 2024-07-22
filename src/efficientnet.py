@@ -5,28 +5,43 @@ class MBConv(nn.Module):
     """
     MBConv (Mobile Inverted Residual Bottleneck) block for EfficientNet.
 
-    This block consists of an expansion phase, a depthwise convolution, and a projection phase.
-    It may include a skip connection if input and output dimensions match.
-
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        kernel_size (int): Kernel size for the depthwise convolution.
-        stride (int): Stride for the depthwise convolution.
-        expand_ratio (int): Expansion ratio for the expand phase.
-
     Attributes:
         stride (int): Stride of the depthwise convolution.
-        expand_ratio (int): Expansion ratio for the expand phase.
+        expand_ratio (int): Ratio for channel expansion.
         expand_channels (int): Number of channels after expansion.
-        skip_connection (bool): Whether to use skip connection.
+        expand_conv (nn.Conv2d): Convolution for channel expansion (if expand_ratio != 1).
+        expand_bn (nn.BatchNorm2d): Batch normalization after expansion convolution.
+        expand_act (nn.SiLU): Activation function after expansion.
+        depthwise_conv (nn.Conv2d): Depthwise convolution.
+        depthwise_bn (nn.BatchNorm2d): Batch normalization after depthwise convolution.
+        depthwise_act (nn.SiLU): Activation function after depthwise convolution.
+        project_conv (nn.Conv2d): Projection convolution to reduce channels.
+        project_bn (nn.BatchNorm2d): Batch normalization after projection convolution.
+        skip_connection (bool): Whether to use skip connection (used when stride is 1 and
+                                input channels equal output channels).
 
-    Note:
-        If expand_ratio is 1, the expansion phase is skipped.
-        Skip connection is used when stride is 1 and input channels equal output channels.
+    This block consists of an expansion phase, a depthwise convolution, and a projection phase.
+    It may include a skip connection if input and output dimensions match.
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride, expand_ratio):
+        """
+        Initialize the MBConv (Mobile Inverted Residual Bottleneck) block.
+
+        This constructor creates an MBConv block, which is a key component of the EfficientNet architecture.
+        It consists of an expansion phase, a depthwise convolution, and a projection phase.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+            kernel_size (int): Size of the kernel for depthwise convolution.
+            stride (int): Stride for the depthwise convolution.
+            expand_ratio (int): Expansion ratio for the number of channels in the expansion phase.
+
+        Note:
+            The expansion phase is skipped if expand_ratio is 1.
+            The skip connection is used when the input and output dimensions match and stride is 1.
+        """
         super(MBConv, self).__init__()
         self.stride = stride
         self.expand_ratio = expand_ratio
@@ -89,35 +104,42 @@ class EfficientNet(nn.Module):
     """
     EfficientNet: A scalable convolutional neural network architecture.
 
+    Attributes:
+        stem_conv (nn.Conv2d): Initial convolutional layer.
+        stem_bn (nn.BatchNorm2d): Batch normalization for the initial layer.
+        stem_act (nn.SiLU): Activation function for the initial layer.
+        blocks (nn.ModuleList): List of MBConv blocks that form the main body of the network.
+        head_conv (nn.Conv2d): Final 1x1 convolutional layer.
+        head_bn (nn.BatchNorm2d): Batch normalization for the final convolutional layer.
+        head_act (nn.SiLU): Activation function for the final convolutional layer.
+        avg_pool (nn.AdaptiveAvgPool2d): Global average pooling layer.
+        dropout (nn.Dropout): Dropout layer for regularization.
+        fc (nn.Linear): Final fully connected layer for classification.
+
     This class implements the EfficientNet architecture as described in
     "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks"
     by Tan and Le (2019).
-
-    Args:
-        width_coefficient (float): Scaling coefficient for network width.
-        depth_coefficient (float): Scaling coefficient for network depth.
-        dropout_rate (float): Dropout rate for the final layer.
-        num_classes (int, optional): Number of output classes. Defaults to 1000.
-
-    Attributes:
-        stem_conv (nn.Conv2d): Initial convolutional layer.
-        stem_bn (nn.BatchNorm2d): Batch normalization for the stem.
-        stem_act (nn.SiLU): Activation function for the stem.
-        blocks (nn.ModuleList): List of MBConv blocks.
-        head_conv (nn.Conv2d): Final 1x1 convolutional layer.
-        head_bn (nn.BatchNorm2d): Batch normalization for the head.
-        head_act (nn.SiLU): Activation function for the head.
-        avg_pool (nn.AdaptiveAvgPool2d): Global average pooling.
-        dropout (nn.Dropout): Dropout layer.
-        fc (nn.Linear): Final fully connected layer.
-
-    Note:
-        The network architecture is dynamically adjusted based on the
-        width and depth coefficients. The base configuration is scaled
-        according to these coefficients to create different EfficientNet variants.
     """
-
     def __init__(self, width_coefficient, depth_coefficient, dropout_rate, num_classes=2):
+        """
+        Initialize the EfficientNet model.
+
+        This constructor creates an EfficientNet model with configurable width, depth, and number of classes.
+        It sets up the initial convolutional layer, multiple MBConv blocks, and the final classification layers.
+
+        Args:
+            width_coefficient (float): Scaling coefficient for network width. Controls the number of
+                                       channels in each layer.
+            depth_coefficient (float): Scaling coefficient for network depth. Controls the number of
+                                       layers in the network.
+            dropout_rate (float): Dropout rate for the final layer. Used for regularization.
+            num_classes (int, optional): Number of classes for classification. Defaults to 2.
+
+        Note:
+            The network architecture is dynamically adjusted based on the width and depth coefficients.
+            The base configuration is scaled according to these coefficients to create different
+            EfficientNet variants.
+        """
         super(EfficientNet, self).__init__()
 
         # Base configuration
@@ -140,8 +162,8 @@ class EfficientNet(nn.Module):
         for i in range(7):
             for j in range(depths[i]):
                 stride = base_strides[i] if j == 0 else 1
-                in_channels = channels[i] if j == 0 else channels[i+1]
-                out_channels = channels[i+1]
+                in_channels = channels[i] if j == 0 else channels[i + 1]
+                out_channels = channels[i + 1]
                 kernel_size = 3 if i == 0 else 5
                 expand_ratio = base_expand_ratios[i]
                 self.blocks.append(MBConv(in_channels, out_channels, kernel_size, stride, expand_ratio))
@@ -186,9 +208,6 @@ class EfficientNetConfig:
     """
     Configuration class for EfficientNet variants.
 
-    This class encapsulates the key parameters that define different variants
-    of the EfficientNet model architecture.
-
     Attributes:
         width_coefficient (float): Scaling coefficient for network width.
             Controls the number of channels in each layer.
@@ -199,14 +218,9 @@ class EfficientNetConfig:
         dropout_rate (float): Dropout rate applied in the final layers.
             Used for regularization to prevent overfitting.
 
-    These parameters are used to create different variants of EfficientNet (B0-B7)
-    by scaling the baseline architecture according to the compound scaling method
-    described in the EfficientNet paper.
-
-    Example:
-        config = EfficientNetConfig(1.0, 1.0, 224, 0.2)  # EfficientNet-B0 configuration
+    This class encapsulates the key parameters that define different variants
+    of the EfficientNet model architecture.
     """
-
     def __init__(self, width_coefficient, depth_coefficient, resolution, dropout_rate):
         """
         Initialize an EfficientNetConfig instance.
@@ -216,6 +230,13 @@ class EfficientNetConfig:
             depth_coefficient (float): Scaling factor for network depth.
             resolution (int): Input image resolution.
             dropout_rate (float): Dropout rate for regularization.
+
+        These parameters are used to create different variants of EfficientNet (B0-B7)
+        by scaling the baseline architecture according to the compound scaling method
+        described in the EfficientNet paper.
+
+        Example:
+            config = EfficientNetConfig(1.0, 1.0, 224, 0.2)  # EfficientNet-B0 configuration
         """
         self.width_coefficient = width_coefficient
         self.depth_coefficient = depth_coefficient
@@ -265,7 +286,6 @@ class EfficientNetFactory:
         Example:
             model = EfficientNetFactory.create('b0', num_classes=100)
         """
-
         configs = {
             'b0': EfficientNetConfig(1.0, 1.0, 224, 0.2),
             'b1': EfficientNetConfig(1.0, 1.1, 240, 0.2),
