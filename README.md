@@ -175,7 +175,8 @@ The script generates 10,000 images per Kanji character. For characters with more
 
 #### Alternative: Download Pre-balanced Dataset
 
-If you prefer to skip the data preparation steps, you can download our pre-balanced dataset from [this Google Drive link](#).
+If you prefer to skip the data preparation steps, you can download our pre-balanced dataset 
+from [this Google Drive link](https://drive.google.com/file/d/1JSRjVO2eJspCWxbsrQ8cQth9EuJtjmK5/view?usp=sharing).
 
 ### 4. Prepare Kuzushiji Array Data
 
