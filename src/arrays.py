@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from PIL import Image
+from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
 
@@ -93,9 +94,8 @@ def prepare_array_data(input_dir, index_data):
     codepoint_to_id = index_data["codepoint_to_id"]
 
     # Dynamically determine the total number of images
-    total_images = sum(len([f for f in os.listdir(os.path.join(input_dir, codepoint.split()[-1][1:-1]))
-                            if f.endswith('.png') and not f.startswith("._")])
-                       for codepoint in codepoint_to_id)
+    total_images = sum(len([f for f in os.listdir(os.path.join(input_dir, codepoint.split()[-1][1:-1])) if
+                            f.endswith('.png') and not f.startswith("._")]) for codepoint in codepoint_to_id)
 
     images = np.zeros((total_images, 64, 64), dtype=np.uint8)
     labels = np.zeros(total_images, dtype=np.int32)
@@ -114,3 +114,28 @@ def prepare_array_data(input_dir, index_data):
                 image_index += 1
 
     return images[:image_index], labels[:image_index]  # Trim any unused allocated space
+
+
+def sparse_confusion_matrix(dense_matrix):
+    """
+    Convert a dense confusion matrix to a sparse dictionary representation.
+
+    This function creates a two-level dictionary where the keys are:
+    - First level: index i (true label)
+    - Second level: index j (predicted label)
+    The value is the number of classifications of i as j, where i is not equal to j.
+
+    Args:
+    dense_matrix (list of lists): The dense confusion matrix.
+
+    Returns:
+    dict: A sparse dictionary representation of the confusion matrix.
+    """
+    sparse_dict = {}
+    for i, row in enumerate(dense_matrix):
+        for j, value in enumerate(row):
+            if i != j and value != 0:
+                if i not in sparse_dict:
+                    sparse_dict[i] = {}
+                sparse_dict[i][j] = value
+    return sparse_dict

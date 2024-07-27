@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from arrays import sparse_confusion_matrix
+from helpers import ensure_directory
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.metrics import precision_score, recall_score, confusion_matrix
 from tqdm import tqdm
@@ -26,14 +28,14 @@ train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
 # 3. Create PyTorch DataLoaders
 print("Creating DataLoaders...")
-batch_size = 8192
+batch_size = 50000
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
 # 4. Set up EfficientNet model
 print("Setting up model...")
 num_classes = len(np.unique(labels))
-model = EfficientNetFactory.create('b0', num_classes=num_classes)
+model = EfficientNetFactory.create("b0", num_classes=num_classes)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 if torch.cuda.device_count() > 1:
@@ -48,6 +50,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, amsgrad=True)
 print("Starting training...")
 num_epochs = 50
 log_file = "training_log.jsonl"
+ensure_directory("../checkpoints")
 
 for epoch in range(num_epochs):
     model.train()
@@ -57,7 +60,7 @@ for epoch in range(num_epochs):
     train_true = []
     train_pred = []
 
-    for batch_idx, (inputs, targets) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")):
+    for batch_idx, (inputs, targets) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs}")):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
@@ -73,19 +76,16 @@ for epoch in range(num_epochs):
         train_true.extend(targets.cpu().numpy())
         train_pred.extend(predicted.cpu().numpy())
 
-        # Checkpoint every 100 batches
-        if (batch_idx + 1) % 100 == 0:
-            torch.save({
-                'epoch': epoch,
-                'batch': batch_idx,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': loss,
-            }, f'checkpoint_epoch_{epoch+1}_batch_{batch_idx+1}.pth')
+    torch.save({
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "loss": loss,
+    }, f"../checkpoints/checkpoint_epoch_{epoch + 1}.pth")
 
     train_accuracy = train_correct / train_total
-    train_precision = precision_score(train_true, train_pred, average='weighted')
-    train_recall = recall_score(train_true, train_pred, average='weighted')
+    train_precision = precision_score(train_true, train_pred, average="weighted")
+    train_recall = recall_score(train_true, train_pred, average="weighted")
 
     # Validation
     model.eval()
@@ -110,9 +110,10 @@ for epoch in range(num_epochs):
             val_pred.extend(predicted.cpu().numpy())
 
     val_accuracy = val_correct / val_total
-    val_precision = precision_score(val_true, val_pred, average='weighted')
-    val_recall = recall_score(val_true, val_pred, average='weighted')
-    val_confusion_matrix = confusion_matrix(val_true, val_pred).tolist()
+    val_precision = precision_score(val_true, val_pred, average="weighted")
+    val_recall = recall_score(val_true, val_pred, average="weighted")
+    dense_val_confusion_matrix = confusion_matrix(val_true, val_pred).tolist()
+    sparse_val_confusion_matrix = sparse_confusion_matrix(dense_val_confusion_matrix)
 
     # Log metrics
     log_entry = {
@@ -125,13 +126,14 @@ for epoch in range(num_epochs):
         "val_accuracy": val_accuracy,
         "val_precision": val_precision,
         "val_recall": val_recall,
-        "val_confusion_matrix": val_confusion_matrix
+        "val_confusion_matrix": sparse_val_confusion_matrix
     }
 
     with open(log_file, "a") as f:
         f.write(json.dumps(log_entry) + "\n")
+        f.flush()
 
-    print(f"Epoch {epoch+1}/{num_epochs}")
+    print(f"Epoch {epoch + 1}/{num_epochs}")
     print(f"Train Loss: {log_entry['train_loss']:.4f}, Train Acc: {train_accuracy:.4f}")
     print(f"Val Loss: {log_entry['val_loss']:.4f}, Val Acc: {val_accuracy:.4f}")
 
