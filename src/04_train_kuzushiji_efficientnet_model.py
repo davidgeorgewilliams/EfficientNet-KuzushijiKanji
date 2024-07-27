@@ -26,7 +26,7 @@ train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
 # 3. Create PyTorch DataLoaders
 print("Creating DataLoaders...")
-batch_size = 64
+batch_size = 8192
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
@@ -36,6 +36,9 @@ num_classes = len(np.unique(labels))
 model = EfficientNetFactory.create('b0', num_classes=num_classes)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
+if torch.cuda.device_count() > 1:
+    print(f"Using {torch.cuda.device_count()} GPUs!")
+    model = nn.DataParallel(model)
 
 # 5. Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()

@@ -78,8 +78,8 @@ def prepare_array_data(input_dir, index_data):
                                    label IDs as uint32 values.
 
     Note:
-        - The function assumes that each codepoint subdirectory contains exactly 10,000 PNG images.
-        - Images are converted to grayscale and resized to 64x64 pixels if necessary.
+        - The function dynamically determines the number of images for each codepoint.
+        - Images are converted to grayscale and assumed to be 64x64 pixels.
         - The function uses tqdm to display a progress bar during processing.
         - The order of images in the returned arrays corresponds to the order of codepoints in
           the index_data dictionary and the alphabetical order of image filenames within each
@@ -89,13 +89,16 @@ def prepare_array_data(input_dir, index_data):
         >>> index_data = create_index_json("/path/to/kuzushiji/data")
         >>> images, labels = prepare_array_data("/path/to/kuzushiji/data", index_data)
         >>> print(images.shape, labels.shape)
-        (3832000, 64, 64) (3832000,)
     """
     codepoint_to_id = index_data["codepoint_to_id"]
-    num_images = len(codepoint_to_id) * 10000  # 10000 images per codepoint
 
-    images = np.zeros((num_images, 64, 64), dtype=np.uint8)
-    labels = np.zeros(num_images, dtype=np.uint32)
+    # Dynamically determine the total number of images
+    total_images = sum(len([f for f in os.listdir(os.path.join(input_dir, codepoint.split()[-1][1:-1]))
+                            if f.endswith('.png') and not f.startswith("._")])
+                       for codepoint in codepoint_to_id)
+
+    images = np.zeros((total_images, 64, 64), dtype=np.uint8)
+    labels = np.zeros(total_images, dtype=np.int32)
 
     image_index = 0
     for codepoint_char, id_value in tqdm(codepoint_to_id.items()):
@@ -103,11 +106,11 @@ def prepare_array_data(input_dir, index_data):
         codepoint_dir = os.path.join(input_dir, codepoint)
 
         for filename in os.listdir(codepoint_dir):
-            if filename.endswith('.png'):
+            if filename.endswith('.png') and not filename.startswith("._"):  # MacOS fix for ._ file names
                 img_path = os.path.join(codepoint_dir, filename)
                 img = Image.open(img_path).convert('L')  # Convert to grayscale
                 images[image_index] = np.array(img)
                 labels[image_index] = id_value
                 image_index += 1
 
-    return images, labels
+    return images[:image_index], labels[:image_index]  # Trim any unused allocated space
