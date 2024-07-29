@@ -31,7 +31,8 @@ The inability to read Kuzushiji has profound implications for Japan's cultural h
 
 ### The Kuzushiji Dataset
 
-To address this challenge, the National Institute of Japanese Literature (NIJL) and the Center for Open Data in the Humanities (CODH) created the Kuzushiji dataset:
+To address this challenge, the [National Institute of Japanese Literature (NIJL)](https://www.nijl.ac.jp/) 
+and the [Center for Open Data in the Humanities (CODH)](http://codh.rois.ac.jp/) created the Kuzushiji dataset:
 
 - Part of a national project to digitize about 300,000 old Japanese books.
 - Contains 3,999 character types and 403,242 characters.
