@@ -88,7 +88,7 @@ To get started with this project, follow these steps:
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/EfficientNet-KuzushijiKanji.git
+git clone https://github.com/davidgeorgewilliams/EfficientNet-KuzushijiKanji.git
 cd EfficientNet-KuzushijiKanji
 ```
 
