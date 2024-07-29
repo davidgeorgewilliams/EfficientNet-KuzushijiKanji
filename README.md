@@ -218,9 +218,81 @@ After running this script, you'll have a structured dataset ready for model inpu
 
 The scripts in the `src` directory are numbered (e.g., `01_`, `02_`, ...) to indicate the order in which they should be run. Always execute them in ascending numerical order to ensure proper data processing.
 
-## Next Steps
+## Training Results and Insights
 
-After preparing your data, you can proceed to train the EfficientNet model on the balanced Kuzushiji dataset. Refer to the subsequent sections of this README for instructions on model training and evaluation.
+We trained our EfficientNet model on the Kuzushiji dataset using state-of-the-art hardware and optimized training parameters. The training process yielded impressive results, demonstrating the model's ability to learn and generalize effectively on this complex character recognition task.
+
+### Training Environment
+
+- Hardware: 8x NVIDIA H100 (80 GB SXM5) GPUs
+- CPU: 208 cores
+- RAM: 1.9 TB
+- Storage: 24.2 TB SSD
+- Provider: LambdaLabs
+
+### Training Parameters
+
+- Batch size: `50000`
+- Optimizer: Adam with `amsgrad` setting
+- Learning rate: `0.001` (default Adam learning rate)
+- Epochs: `50`
+
+We found that using larger batch sizes with the Adam optimizer and its default learning rate resulted in a very stable learning process without experiencing overfitting. Based on our observations, we believe that training for an additional 50 epochs could lead to further incremental improvements without introducing overfitting.
+
+### Results Analysis
+
+#### Learning Curves
+![Learning Curves](docs/learning_curves.png)
+
+The learning curves plot shows the training and validation loss (top) and accuracy (bottom) over the course of training. We observe:
+- Rapid initial improvement in both loss and accuracy
+- Consistent convergence of training and validation metrics, indicating good generalization
+- No signs of overfitting, as validation performance closely tracks training performance
+
+#### Training and Validation Loss
+![Loss Curve](docs/loss_curve.png)
+
+This plot focuses on the loss for both training and validation sets:
+- Sharp decrease in loss during the first few epochs
+- Gradual and steady decline in loss throughout training
+- Close alignment between training and validation loss, suggesting a well-balanced model
+
+#### Training and Validation Accuracy
+![Accuracy Curve](docs/accuracy_curve.png)
+
+The accuracy curve demonstrates:
+- Rapid increase in accuracy during early epochs
+- Consistent high accuracy achieved for both training and validation sets
+- Slight edge of training accuracy over validation accuracy, but within acceptable limits
+
+#### Precision and Recall
+![Precision and Recall Curve](docs/precision_recall_curve.png)
+
+This plot shows the precision and recall for both training and validation sets:
+- High precision and recall values achieved early in training
+- Consistent performance across training and validation sets
+- Balanced precision and recall, indicating the model's ability to correctly identify characters without sacrificing either metric
+
+#### Top Misclassifications
+![Top Misclassifications](docs/top_misclassifications_final.png)
+
+We analyzed the top 50 misclassified pairs from the validation set at epoch 50:
+- Many misclassifications appear intuitive based on the visual similarities between Kanji characters
+- Results highlight the need for additional training data to further improve the model's ability to distinguish between visually similar characters
+- This analysis provides valuable insights for potential future improvements in data collection and model architecture
+
+### Conclusion
+
+Our EfficientNet model has demonstrated strong performance in Kuzushiji character recognition. The stable learning process and high accuracy achieved suggest that the model has effectively learned to classify a wide range of Kanji characters. However, the analysis of misclassifications indicates that there is still room for improvement, particularly in distinguishing between visually similar characters.
+
+### Model Availability
+
+We have made our trained model available for public use and further research. You can access the following resources via this [Google Drive link](https://drive.google.com/file/d/1UhQ5fkcg8iwKLIHvDBjdEwuYnCEBSV5y/view?usp=sharing):
+
+- Character to index mapping
+- Best model checkpoint (epoch 50)
+
+We encourage researchers and enthusiasts to build upon our work and contribute to the ongoing efforts in historical Japanese text recognition.
 
 ## Contributing
 

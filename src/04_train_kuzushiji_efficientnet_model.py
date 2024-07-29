@@ -49,7 +49,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, amsgrad=True)
 # 6. Training loop
 print("Starting training...")
 num_epochs = 50
-log_file = "training_log.jsonl"
+log_file = "../training_log.jsonl"
 ensure_directory("../checkpoints")
 
 for epoch in range(num_epochs):

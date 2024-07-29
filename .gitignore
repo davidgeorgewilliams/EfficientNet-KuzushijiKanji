@@ -5,6 +5,7 @@ __pycache__/
 
 # Data files
 data/
+results/
 
 # MacOS files
 *.DS_Store
