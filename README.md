@@ -21,6 +21,8 @@ Kuzushiji (くずし字), meaning "cursive characters", refers to a style of han
 
 Kuzushiji was the standard writing style in Japan for over a millennium, used in literature, official documents, and personal correspondence. However, following the Meiji Restoration in 1868, Japan underwent rapid modernization, including reforms in education and writing systems. As a result, Kuzushiji is no longer taught in schools, creating a significant barrier to accessing Japan's rich textual heritage.
 
+![200014778 Image](https://github.com/user-attachments/assets/b3150f7f-b468-43f3-80ba-0b38dfb46e0f)
+
 ### Cultural Impact
 
 The inability to read Kuzushiji has profound implications for Japan's cultural heritage:
